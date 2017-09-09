@@ -2,9 +2,9 @@
 #include <SoftwareSerial.h>
 #define _baudrate   115200
 //*-- IoT Information
-#define SSID "ADLINKTECH"
-#define PASS "adlink6166"
-#define IP "172.16.4.24" // ThingSpeak IP Address: 184.106.153.149
+#define SSID "CPPS-WIFI" //"ADLINKTECH"
+#define PASS "AdlinkCPPS"//"adlink6166"
+#define IP "172.16.4.24" // Timmy Server: 172.16.4.24 , ThingSpeak IP Address: 184.106.153.149
 #define _SCK 4
 #define _CS 2
 #define _SO 6
@@ -16,7 +16,7 @@ SoftwareSerial serialSoft(rx, tx);
 
 // 使用 GET 傳送資料的格式
 // GET /update?key=[THINGSPEAK_KEY]&field1=[data 1]&filed2=[data 2]...;
-String POST = "POST /temp HTTP/1.1\r\nHOST: 172.16.4.24\r\nContent-Type: application/json\r\nContent-Length: ";
+String POST = "POST /POST/TPMC/DIP/Furnace HTTP/1.1\r\nHOST: 172.16.4.24\r\nContent-Type: application/json\r\nContent-Length: ";
 
 static volatile uint8_t is_tc_open;
 void sendDebug(String cmd);
@@ -27,29 +27,7 @@ void software_Reset();
 
 void setup()
 {
-    pinMode(LED, OUTPUT);
-    Serial.begin( _baudrate );
-    serialSoft.begin(9600);
-    //Serial1.begin( _baudrate );
-
-    sendDebug("AT");
-    Loding();
-
-    sendDebug("AT+CWMODE=1");
-    Loding();
-
-    String cmd="AT+CWJAP=\"";
-    cmd+=SSID;
-    cmd+="\",\"";
-    cmd+=PASS;
-    cmd+="\"";
-    sendDebug(cmd);
-    Loding();
-
-    pinMode( _SCK, OUTPUT );
-    pinMode( _SO, INPUT );
-    pinMode( _CS, OUTPUT );
-    digitalWrite( _CS, HIGH );
+  software_Reset();
 }
 void loop()
 {
@@ -81,14 +59,14 @@ void loop()
 void SentOnCloud( String T )
 {
     // 設定 ESP8266 作為 Client 端
+
     String cmd = "AT+CIPSTART=\"TCP\",\"";
     cmd += IP;
-    cmd += "\",8008";
+    cmd += "\",80";
     sendDebug(cmd);
     if( Serial.find( "Error" ) )
     {
-        serialSoft.print( "RECEIVED: Error\nExit1" );
-        return;
+       serialSoft.print( "RECEIVED: Error\nExit1" );
     }
 
     String jsonCmd = "{\"temp\":" + T + "}";
@@ -121,6 +99,7 @@ void SentOnCloud( String T )
       {
         serialSoft.println("Auto Reboot");
         software_Reset();
+        break;
       }
       delay(300);
       serialSoft.println("Waiting for rececived ");
@@ -202,5 +181,31 @@ float max6675_getCelsius()
 
 void software_Reset()
 {
-  asm volatile ("  jmp 0");
+  pinMode(LED, OUTPUT);
+  Serial.begin( _baudrate );
+  serialSoft.begin(9600);
+  //Serial1.begin( _baudrate );
+
+  sendDebug("AT+RST");
+
+  delay(1000);
+
+  sendDebug("AT");
+  Loding();
+
+  sendDebug("AT+CWMODE=1");
+  Loding();
+
+  String cmd="AT+CWJAP=\"";
+  cmd+=SSID;
+  cmd+="\",\"";
+  cmd+=PASS;
+  cmd+="\"";
+  sendDebug(cmd);
+  Loding();
+
+  pinMode( _SCK, OUTPUT );
+  pinMode( _SO, INPUT );
+  pinMode( _CS, OUTPUT );
+  digitalWrite( _CS, HIGH );
 }
